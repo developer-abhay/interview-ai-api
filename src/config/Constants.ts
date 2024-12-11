@@ -1,0 +1,1 @@
+export const User_Table_Name: string = "interview_UserTable";
