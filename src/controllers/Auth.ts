@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { validateUserInput } from "../utils/Validation";
 import { User } from "../interfaces/Types";
 import { createUser, findUserByEmail } from "../db/Dynamo";
+import { generateToken } from "../utils/AuthUtils";
 dotenv.config();
 
 // SignUp Handler
@@ -51,5 +52,56 @@ export const signup = async (req: Request, res: Response) => {
 
 // SignIn Handler
 export const signin = async (req: Request, res: Response) => {
-    res.status(200).json({ message: "Signin successful" });
+    const { email, password } = req.body;
+
+    try {
+        // Validate user inputs
+        validateUserInput("signin", { email, password });
+
+        // Find user by email
+        const existingUser = await findUserByEmail(email);
+
+        if (!existingUser) {
+            res
+                .status(404)
+                .json({ message: "User doesn't exist. Please register first." });
+            return;
+        }
+
+        // Compare passwords
+        const isPasswordValid = await bcrypt.compare(
+            password,
+            existingUser.password,
+        );
+
+        if (!isPasswordValid) {
+            res.status(401).json({ message: "Invalid credentials" });
+            return;
+        }
+
+        // Generate JWT token and set in cookies
+        const token = generateToken(existingUser.userId);
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            // secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 60 * 60 * 1000, // 1 hour
+        });
+
+        res
+            .status(200)
+            .json({
+                message: "Sign in successful",
+                user: { name: existingUser.name, email: existingUser.email },
+            });
+    } catch (err: unknown) {
+        if (err instanceof Error) {
+            console.error("Error during signup: ", err.message);
+            res.status(500).json({ message: err.message });
+        } else {
+            console.error("Unexpected error during signup: ", err);
+            res.status(500).json({ message: "Internal Server Error" });
+        }
+    }
 };
