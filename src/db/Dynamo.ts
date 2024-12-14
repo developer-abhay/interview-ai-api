@@ -1,31 +1,36 @@
-import AWS from "aws-sdk";
+import { AttributeValue, DynamoDBClient, PutItemCommand, ScanCommand } from "@aws-sdk/client-dynamodb";
 import dotenv from "dotenv";
 import { User } from "../interfaces/Types";
 import { User_Table_Name } from "../config/Constants";
 
 dotenv.config();
 
-AWS.config.update({
-    region: process.env.AWS_REGION,
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-});
+if (!process.env.AWS_REGION || !process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+    throw new Error('Missing AWS configuration in environment variables.')
+}
 
-const dynamoUser = new AWS.DynamoDB.DocumentClient();
+const dynamoUser = new DynamoDBClient({
+    region: process.env.AWS_REGION,
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    }
+});
 
 // Find a user by email
 const findUserByEmail = async (email: string): Promise<User | null> => {
     const params = {
         TableName: User_Table_Name,
         FilterExpression: "email = :email",
-        ExpressionAttributeValues: { ":email": email },
+        ExpressionAttributeValues: { ":email": { S: email } },
     };
 
     try {
-        const response = await dynamoUser.scan(params).promise();
+        const command = new ScanCommand(params);
+        const response = await dynamoUser.send(command);
 
-        return response.Count && response.Count! > 0
-            ? (response.Items![0] as User)
+        return response.Count && response.Count > 0
+            ? transformDynamoItem(response.Items![0]) as User
             : null;
     } catch (error) {
         console.log(error);
@@ -35,14 +40,43 @@ const findUserByEmail = async (email: string): Promise<User | null> => {
 
 // Create a new user
 const createUser = async (user: User): Promise<void> => {
-    const params = { TableName: User_Table_Name, Item: user };
+    const params = {
+        TableName: User_Table_Name,
+        Item: transformUserToDynamoItem(user),
+    };
 
     try {
-        await dynamoUser.put(params).promise();
+        const command = new PutItemCommand(params);
+        await dynamoUser.send(command);
     } catch {
         throw new Error("Error while Creating a newUser in dynamoDB");
     }
 };
 
+
+// Helper function to transform a DynamoDB item into a User type
+const transformDynamoItem = (item: Record<string, AttributeValue>): User => {
+    return {
+        userId: item.userId.S!,
+        name: item.name.S!,
+        email: item.email.S!,
+        password: item.password.S!,
+        createdAt: item.createdAt.S!,
+        updatedAt: item.updatedAt.S!,
+    };
+};
+
+
+// Helper function to transform a User type to DynamoDB Item format
+const transformUserToDynamoItem = (user: User): Record<string, AttributeValue> => {
+    return {
+        userId: { S: user.userId },
+        name: { S: user.name },
+        email: { S: user.email },
+        password: { S: user.password },
+        createdAt: { S: user.createdAt },
+        updatedAt: { S: user.updatedAt },
+    };
+};
 
 export { findUserByEmail, createUser };
