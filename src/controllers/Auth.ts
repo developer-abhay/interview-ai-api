@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import { validateUserInput } from "../utils/Validation";
-import { User } from "../interfaces/Types";
+import { CustomRequest, User } from "../interfaces/Types";
 import { createUser, findUserByEmail } from "../db/Dynamo";
 import { generateToken } from "../utils/AuthUtils";
 dotenv.config();
@@ -105,3 +105,21 @@ export const signin = async (req: Request, res: Response) => {
         }
     }
 };
+
+// Verify cookies
+export const verifyMe = async (req: CustomRequest, res: Response) => {
+    const verifiedEmail = req.verifiedEmail;
+
+    if (verifiedEmail) {
+        const user = await findUserByEmail(verifiedEmail);
+
+        if (user) {
+            res
+                .status(200)
+                .json({ valid: true, user: { name: user.name, email: user.email } });
+            return;
+        }
+    }
+
+    res.status(401).json({ valid: false, message: "Unauthorized" });
+}

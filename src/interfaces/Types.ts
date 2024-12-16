@@ -1,3 +1,5 @@
+import { Request } from "express";
+
 export type User = {
     userId: string;
     name: string;
@@ -6,3 +8,8 @@ export type User = {
     createdAt: string;
     updatedAt: string;
 };
+
+
+export interface CustomRequest extends Request {
+    verifiedEmail?: string;
+}
