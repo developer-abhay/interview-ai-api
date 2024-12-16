@@ -4,9 +4,10 @@ import {
     signup,
     verifyMe,
 } from "../controllers/Auth";
+import { verifyCookies } from "../middlewares/AuthMiddleware";
 
 export const appRouter = express.Router();
 
 appRouter.post("/signup", signup);
 appRouter.post("/signin", signin);
-appRouter.post("/me", verifyMe);
+appRouter.get("/me", verifyCookies, verifyMe);

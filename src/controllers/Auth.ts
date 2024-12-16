@@ -80,7 +80,7 @@ export const signin = async (req: Request, res: Response) => {
         }
 
         // Generate JWT token and set in cookies
-        const token = generateToken(existingUser.userId);
+        const token = generateToken(existingUser.email);
 
         res.cookie("token", token, {
             httpOnly: true,
