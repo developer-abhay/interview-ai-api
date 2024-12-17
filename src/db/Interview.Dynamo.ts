@@ -15,7 +15,7 @@ const fetchReviewbyInterviewId = async (interviewId: string) => {
         const response = await dynamoUser.send(command);
 
         return response.Count && response.Count > 0
-            ? transformDynamoItem(response.Items![0]) as Interview
+            ? transformDynamoItem(response.Items![0])
             : null;
     } catch (error) {
         console.log(error);
@@ -24,12 +24,10 @@ const fetchReviewbyInterviewId = async (interviewId: string) => {
 }
 
 // Helper function to transform a DynamoDB item into a Interview type
-const transformDynamoItem = (item: Record<string, AttributeValue>): Interview => {
+const transformDynamoItem = (item: Record<string, AttributeValue>) => {
     return {
-        interviewId: item.interviewId.S!,
-        userId: item.userId.S!,
-        conversationTranscript: item.conversationTranscript.S!,
-        callOutcome: item.callOutcome.S!,
+        conversationTranscript: item.conversationTranscript.S ? item.conversationTranscript.S : '',
+        callOutcome: item.callOutcome.S ? item.callOutcome.S : '',
     };
 };
 
