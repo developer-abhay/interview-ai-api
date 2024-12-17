@@ -1,21 +1,7 @@
-import { AttributeValue, DynamoDBClient, PutItemCommand, ScanCommand } from "@aws-sdk/client-dynamodb";
-import dotenv from "dotenv";
+import { AttributeValue, PutItemCommand, ScanCommand } from "@aws-sdk/client-dynamodb";
 import { User } from "../interfaces/Types";
 import { User_Table_Name } from "../config/Constants";
-
-dotenv.config();
-
-if (!process.env.AWS_REGION || !process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
-    throw new Error('Missing AWS configuration in environment variables.')
-}
-
-const dynamoUser = new DynamoDBClient({
-    region: process.env.AWS_REGION,
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    }
-});
+import dynamoUser from "./DynamoClient";
 
 // Find a user by email
 const findUserByEmail = async (email: string): Promise<User | null> => {
@@ -53,7 +39,6 @@ const createUser = async (user: User): Promise<void> => {
     }
 };
 
-
 // Helper function to transform a DynamoDB item into a User type
 const transformDynamoItem = (item: Record<string, AttributeValue>): User => {
     return {
@@ -65,7 +50,6 @@ const transformDynamoItem = (item: Record<string, AttributeValue>): User => {
         updatedAt: item.updatedAt.S!,
     };
 };
-
 
 // Helper function to transform a User type to DynamoDB Item format
 const transformUserToDynamoItem = (user: User): Record<string, AttributeValue> => {

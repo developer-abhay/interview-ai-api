@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import { validateUserInput } from "../utils/Validation";
 import { CustomRequest, User } from "../interfaces/Types";
-import { createUser, findUserByEmail } from "../db/Dynamo";
+import { createUser, findUserByEmail } from "../db/User.Dynamo";
 import { generateToken } from "../utils/AuthUtils";
 dotenv.config();
 
